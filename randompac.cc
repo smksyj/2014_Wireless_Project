@@ -7,6 +7,7 @@
 #include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
 
+#include "ns3/flow-monitor-module.h"
 #include "ns3/netanim-module.h"
 
 #include <iostream>
@@ -22,7 +23,7 @@ static void
 RxCnt (Ptr<const Packet> p, const Address &a)
 {
 		data = data + p->GetSize();
-		NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\ttotal: " << data << "\tpacket size: " << p->GetSize());
+//		NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\ttotal: " << data << "\tpacket size: " << p->GetSize());
 }
 
 class RandomGenerator : public Application
@@ -50,7 +51,7 @@ RandomGenerator::RandomGenerator ()
 		: m_socket(0), m_next()
 {
 	UniformVariable uniform(0.0,2000.0);
-	ExponentialVariable expo(0.0001);
+	ExponentialVariable expo(0.001);
 	SetDelay(expo);
 	SetSize(uniform);
 }
@@ -120,17 +121,18 @@ int main (int argc, char *argv[])
 		int nSta = 1;
 		int ra_indx = 0;
 		int seed = 1;
-		int thre = 2000;
+		int rtsThre = 2000;
+		int fragThre = 2000;
 		CommandLine cmd;
 		cmd.AddValue("nSTA", "number of stations", nSta);
 		cmd.AddValue("RA", "rate adaptation algorithm index", ra_indx);
 		cmd.AddValue("Seed", "seed", seed);
-		cmd.AddValue("thre", "threshold", thre);
+		cmd.AddValue("RtsThre", "RTS/CTS threshold", rtsThre);
+		cmd.AddValue("FragThre", "Fragmentation threshold", fragThre);
 		cmd.Parse (argc, argv);
 
-		//Config::SetDefault ("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue ("2200"));
-		  // turn off RTS/CTS for frames below 2200 bytes
-		  Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold",  StringValue("500"));
+		Config::SetDefault ("ns3::WifiRemoteStationManager::FragmentationThreshold", UintegerValue(fragThre));
+		  Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold",  UintegerValue(rtsThre));
 		  
 		NodeContainer ApNode;
 		ApNode.Create (1);
@@ -204,19 +206,26 @@ int main (int argc, char *argv[])
 
 		MobilityHelper mobility;
 
-		Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-		//positionAlloc->Add (Vector (0.0, 0.0, 0.0));
-		positionAlloc->Add (Vector (15.0, 15.0, 0.0));
-		positionAlloc->Add (Vector (30.0, 0.0, 0.0));
-		positionAlloc->Add (Vector (0.0, 30.0, 0.0));
-		positionAlloc->Add (Vector (-30.0, 0.0, 0.0));
-		positionAlloc->Add (Vector (0.0, -30.0, 0.0));
-		positionAlloc->Add (Vector (0.0, 0.0, 30.0));
-
+		Ptr<UniformDiscPositionAllocator> positionAlloc = CreateObject<UniformDiscPositionAllocator>();
+		positionAlloc->SetRho(70);
+		positionAlloc->SetX(0);
+		positionAlloc->SetY(0);
 		mobility.SetPositionAllocator (positionAlloc);
-		mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-		mobility.Install (c);
 
+		/*
+		mobility.SetPositionAllocator ("ns3::RandomDiscPositionAllocator",
+										"X", StringValue("0.0"),
+										"Y", StringValue("0.0"),
+										"Rho", StringValue("ns3::UniformRandomVariable[Min=0|Max=50]"));
+										*/
+
+		mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+		mobility.Install (StaNodes);
+		
+		Ptr<ListPositionAllocator> apPositionAlloc = CreateObject<ListPositionAllocator> ();
+		apPositionAlloc->Add(Vector(0.0, 0.0, 0.0));
+		mobility.SetPositionAllocator(apPositionAlloc);
+		mobility.Install (ApNode);
 
 		InternetStackHelper internet;
 		internet.Install (c);
@@ -239,35 +248,18 @@ int main (int argc, char *argv[])
 		app.Get(0)->TraceConnectWithoutContext ("Rx", MakeCallback(&RxCnt));
 
 
-		/*
-		   OnOffHelper onoff ("ns3::UdpSocketFactory",
-		   Address (InetSocketAddress (Ipv4Address ("10.1.1.1"), port)));
 
-		//onoff.SetAttribute ("OnTime", RandomVariableValue (ConstantVariable (1)));
-		//onoff.SetAttribute ("OffTime", RandomVariableValue (ConstantVariable (0)));
-		onoff.SetAttribute ("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]")); 
-		onoff.SetAttribute ("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-		onoff.SetAttribute ("DataRate", StringValue ("25Mbps"));
-		onoff.SetAttribute ("PacketSize", UintegerValue (1500));
-		 */
-		/*
-		   for(int i=0; i<nSta; i++)
-		   {
-		   app = onoff.Install (StaNodes.Get (i));
-		   app.Start (Seconds (1.0));
-		   app.Stop (Seconds (10.0));
-		   }
-		 */
-
-		Ptr<RandomGenerator> randomApp = CreateObject<RandomGenerator>();
+		//Ptr<RandomGenerator> randomApp = CreateObject<RandomGenerator>();
 		Address apAddress(InetSocketAddress(addresses.GetAddress(0), port));
+		Ptr<Socket> socket[50];
+		Ptr<RandomGenerator> randomApp[50] = CreateObject<RandomGenerator>();;
 		for(int i=0; i<nSta; i++)
 		{
-				Ptr<Socket> socket = Socket::CreateSocket(StaNodes.Get(i), UdpSocketFactory::GetTypeId());
-				randomApp->SetRemote(socket, apAddress);
-				StaNodes.Get(i)->AddApplication (randomApp);
-				randomApp->SetStartTime(Seconds(1.0));
-				randomApp->SetStopTime(Seconds(10.0));
+				socket[i] = Socket::CreateSocket(StaNodes.Get(i), UdpSocketFactory::GetTypeId());
+				randomApp[i]->SetRemote(socket[i], apAddress);
+				StaNodes.Get(i)->AddApplication (randomApp[i]);
+				randomApp[i]->SetStartTime(Seconds(1.0));
+				randomApp[i]->SetStopTime(Seconds(10.0));
 		}
 		//	wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
 		//	wifiPhy.EnablePcap ("session6_ex1", devices);
@@ -275,8 +267,29 @@ int main (int argc, char *argv[])
 
 		AnimationInterface anim("randomPacket.xml");
 
+		FlowMonitorHelper flowmon;
+		Ptr<FlowMonitor> monitor = flowmon.InstallAll();
+
 		Simulator::Stop (Seconds (10.0));
 		Simulator::Run ();
+
+		monitor->CheckForLostPackets();
+		Ptr<Ipv4FlowClassifier> classifier =  DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
+		std::map<FlowId, FlowMonitor::FlowStats> stats = monitor->GetFlowStats ();
+
+	for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+	{
+			Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
+			std::cout << "Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
+			std::cout << "  Tx Packets: " << i->second.txPackets << "\n";
+			std::cout << "  Tx Bytes:   " << i->second.txBytes << "\n";
+			std::cout << "  TxOffered:  " << i->second.txBytes * 8.0 / 9.0 / 1000 / 1000  << " Mbps\n";
+			std::cout << "  Rx Packets: " << i->second.rxPackets << "\n";
+			std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
+			std::cout << "  Throughput: " << i->second.rxBytes * 8.0 / 9.0 / 1000 / 1000  << " Mbps\n";
+	}
+
+
 		Simulator::Destroy ();
 		//
 
@@ -293,7 +306,7 @@ int main (int argc, char *argv[])
 		   fout.close();
 		//
 		 */
-		NS_LOG_UNCOND(  rateControl << " >> Number of STAs= " << nSta<< " Aggregated Throughput: "<< (double)data*8/1000/1000/9 << " Mbps");
+		NS_LOG_UNCOND(  "Number of STAs= " << nSta<< " Aggregated Throughput: "<< (double)data*8/1000/1000/9 << " Mbps");
 		return 0;
 }
 
