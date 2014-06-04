@@ -1,0 +1,12 @@
+*
+!scratch/
+!scratch/*
+!src/
+!src/carafwifimanager/
+!src/carafwifimanager/**
+*~
+!.gitignore
+*scratch/*.cc
+*scratch/*.gplt
+*scratch/*.sh
+!scratch/Network_Project_Experiment.cc
