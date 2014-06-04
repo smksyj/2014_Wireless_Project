@@ -277,6 +277,7 @@ int main (int argc, char *argv[])
 		Ptr<Ipv4FlowClassifier> classifier =  DynamicCast<Ipv4FlowClassifier> (flowmon.GetClassifier ());
 		std::map<FlowId, FlowMonitor::FlowStats> stats = monitor->GetFlowStats ();
 
+		ostringstream txrx_info;
 	for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
 	{
 			Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
@@ -287,6 +288,7 @@ int main (int argc, char *argv[])
 			std::cout << "  Rx Packets: " << i->second.rxPackets << "\n";
 			std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
 			std::cout << "  Throughput: " << i->second.rxBytes * 8.0 / 9.0 / 1000 / 1000  << " Mbps\n";
+			txrx_info <<i->second.txPackets<<"\t"<<i->second.txBytes<<"\t"<<i->second.rxPackets<<"\t"<<i->second.rxBytes<<"\n";
 	}
 
 
@@ -306,6 +308,22 @@ int main (int argc, char *argv[])
 		   fout.close();
 		//
 		 */
+		ofstream fout;
+		ostringstream out_filename;
+		out_filename << "simulationResult/nsta"<<nSta<<"_rts"<<rtsThre<<".txt";
+		fout.open(out_filename.str().c_str(), ostream::out);
+		if(!fout.good()){
+				NS_LOG_UNCOND("File open failed");
+		}
+
+		/**txrx_info
+		  * first col :  number of transmitted packets
+		  * second col : total bytes of transmitted packets
+		  * third col : number of received packets
+		  * forth col : total bytes of received packets
+		  */
+
+		fout<<txrx_info.str();
 		NS_LOG_UNCOND(  "Number of STAs= " << nSta<< " Aggregated Throughput: "<< (double)data*8/1000/1000/9 << " Mbps");
 		return 0;
 }
