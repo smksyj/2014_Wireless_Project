@@ -49,7 +49,7 @@ MyApp::MyApp ()
 
 MyApp::~MyApp()
 {
- n m_socket = 0;
+  m_socket = 0;
 }
 
 void
