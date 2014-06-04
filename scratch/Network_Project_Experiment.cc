@@ -7,7 +7,7 @@
 #include "ns3/flow-monitor-module.h"
 #include "ns3/wifi-module.h"
 
-#include "ns3/copiedarfwifimanager.h"
+#include "ns3/carafwifimanager.h"
 
 using namespace ns3;
 
@@ -49,7 +49,7 @@ MyApp::MyApp ()
 
 MyApp::~MyApp()
 {
-  m_socket = 0;
+ n m_socket = 0;
 }
 
 void
