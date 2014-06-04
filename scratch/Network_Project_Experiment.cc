@@ -136,8 +136,7 @@ int main(int argc, char *argv[]) {
   phy.SetChannel(channel.Create());
 
   WifiHelper wifi = WifiHelper::Default();
-  // wifi.SetRemoteStationManager("ns3::ArfWifiManager", "RtsCtsThreshold", UintegerValue(rtsCtsThreshold));
-  wifi.SetRemoteStationManager("ns3::CopiedArfWifiManager", "RtsCtsThreshold", UintegerValue(rtsCtsThreshold));
+  wifi.SetRemoteStationManager("ns3::CarafWifiManager", "RtsCtsThreshold", UintegerValue(rtsCtsThreshold));
 
   NqosWifiMacHelper mac = NqosWifiMacHelper::Default();
 

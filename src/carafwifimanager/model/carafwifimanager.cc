@@ -5,6 +5,9 @@
 #include "ns3/log.h"
 #include "ns3/uinteger.h"
 
+#define Min(a,b) ((a < b) ? a : b)
+#define Max(a,b) ((a > b) ? a : b)
+
 NS_LOG_COMPONENT_DEFINE("ns3::CarafWifiManager");
 
 namespace ns3 {
@@ -168,21 +171,49 @@ namespace ns3 {
     NS_LOG_FUNCTION (this << station);
   }
 
-  WifiMode
-  CarafWifiManager::DoGetDataMode (WifiRemoteStation *st, uint32_t size)
+  // WifiMode
+  // CarafWifiManager::DoGetDataMode (WifiRemoteStation *st, uint32_t size)
+  // {
+  //   NS_LOG_FUNCTION (this << st << size);
+  //   ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
+  //   return GetSupported (station, station->m_rate);
+  // }
+  // WifiMode
+  // CarafWifiManager::DoGetRtsMode (WifiRemoteStation *st)
+  // {
+  //   NS_LOG_FUNCTION (this << st);
+  //   // XXX: we could/should implement the Arf algorithm for
+  //   // RTS only by picking a single rate within the BasicRateSet.
+  //   ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
+  //   return GetSupported (station, 0);
+  // }
+  WifiTxVector
+  CarafWifiManager::DoGetDataTxVector (WifiRemoteStation *st, uint32_t size)
   {
     NS_LOG_FUNCTION (this << st << size);
     ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
-    return GetSupported (station, station->m_rate);
+    return WifiTxVector (GetSupported (station, station->m_rate),
+                         GetDefaultTxPowerLevel (),
+                         GetLongRetryCount (station),
+                         GetShortGuardInterval (station),
+                         Min (GetNumberOfReceiveAntennas (station),GetNumberOfTransmitAntennas()),
+                         GetNumberOfTransmitAntennas (station),
+                         GetStbc (station));
   }
-  WifiMode
-  CarafWifiManager::DoGetRtsMode (WifiRemoteStation *st)
+  WifiTxVector
+  CarafWifiManager::DoGetRtsTxVector (WifiRemoteStation *st)
   {
     NS_LOG_FUNCTION (this << st);
-    // XXX: we could/should implement the Arf algorithm for
-    // RTS only by picking a single rate within the BasicRateSet.
+    /// \todo we could/should implement the Arf algorithm for
+    /// RTS only by picking a single rate within the BasicRateSet.
     ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
-    return GetSupported (station, 0);
+    return WifiTxVector (GetSupported (station, 0),
+                         GetDefaultTxPowerLevel (),
+                         GetLongRetryCount (station),
+                         GetShortGuardInterval (station),
+                         Min (GetNumberOfReceiveAntennas (station),GetNumberOfTransmitAntennas()),
+                         GetNumberOfTransmitAntennas (station),
+                         GetStbc (station));
   }
 
   bool
