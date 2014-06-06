@@ -80,6 +80,7 @@ namespace ns3 {
     NS_LOG_FUNCTION (this << station);
   }
 
+  /*
   void
   CarafWifiManager::DoReportDataFailed (WifiRemoteStation *st)
   {
@@ -110,6 +111,7 @@ namespace ns3 {
 
     NS_LOG_UNCOND("Leave DoReportDataFailed");
   }
+  */
 
   void
   CarafWifiManager::DoReportRxOk (WifiRemoteStation *station,
@@ -160,15 +162,6 @@ namespace ns3 {
       SetFragmentationThreshold(station->fragmentationThreshold);
     }
     NS_LOG_UNCOND("Leave DoReportDataOk");
-  }
-
-  void CarafWifiManager::DoReportDataOk (WifiRemoteStation *st,
-                                         double ackSnr, WifiMode ackMode, double dataSnr)
-  {
-    for ( int i = 0; i < 50; i++ ) {
-      NS_LOG_UNCOND(i << " DoReportDataOk");
-      SetFragmentationThreshold(MAX_FRAGMENTATION_THRESHOLD);
-    }
   }
 
   void
