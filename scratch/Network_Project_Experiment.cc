@@ -9,8 +9,6 @@
 
 #include "ns3/carafwifimanager.h"
 
-#define NUMBER_OF_NODES 1
-
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("Network_Project");
@@ -117,9 +115,12 @@ RxCnt (Ptr<const Packet> p, const Address &a)
   //NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << data);
 }
 
+#define WIFI_NUMBER 3
+
 int main(int argc, char *argv[]) {
   int16_t pktSize = 1000;
-  int nWifi = 2;
+  // int nWifi = 5;
+  int nWifi = WIFI_NUMBER;
   uint16_t rtsCtsThreshold = 2000;
 
   CommandLine cmd;
@@ -138,7 +139,6 @@ int main(int argc, char *argv[]) {
   phy.SetChannel(channel.Create());
 
   WifiHelper wifi = WifiHelper::Default();
-  wifi.SetStandard (WIFI_PHY_STANDARD_80211b);
   wifi.SetRemoteStationManager("ns3::CarafWifiManager", "RtsCtsThreshold", UintegerValue(rtsCtsThreshold));
 
   NqosWifiMacHelper mac = NqosWifiMacHelper::Default();
@@ -182,13 +182,12 @@ int main(int argc, char *argv[]) {
   ApplicationContainer udpapp = udpsink.Install (wifiApNode.Get (0));
   udpapp.Start (Seconds (0.0));
   udpapp.Stop (Seconds (7.0));
-  Ptr<Socket> udpsocket[NUMBER_OF_NODES];
-  Ptr<MyApp> udpflow[NUMBER_OF_NODES] = CreateObject<MyApp> ();
-  // Ptr<Socket> udpsocket[nWifi];
-  // Ptr<MyApp> udpflow[nWifi] = CreateObject<MyApp>();
+  Ptr<Socket> udpsocket[5];
+  Ptr<MyApp> udpflow[5] = CreateObject<MyApp> ();
 
   for ( int j = 0; j < nWifi ; j++ ) {
     udpsocket[j] = Socket::CreateSocket (wifiStaNodes.Get (j), UdpSocketFactory::GetTypeId ());
+    NS_LOG_UNCOND("wifiStaNodes " << j << " : " << wifiStaNodes.Get(j));
     udpflow[j] ->Setup (udpsocket[j], Address (InetSocketAddress (wifiApInterface.GetAddress (0), port)), pktSize, 500000, DataRate ("50Mbps"));
     wifiStaNodes.Get (j)->AddApplication (udpflow[j]);    
     udpflow[j]->SetStartTime (Seconds (1.0));
