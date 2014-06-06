@@ -7,24 +7,17 @@
 
 #define Min(a,b) ((a < b) ? a : b)
 #define Max(a,b) ((a > b) ? a : b)
-#define FRAG_MAX 256
-#define FRAG_MIN 2000
-
-#define MIN_FRAGMENTATION_THRESHOLD 256
-#define MAX_FRAGMENTATION_THRESHOLD 2048
 
 NS_LOG_COMPONENT_DEFINE("ns3::CarafWifiManager");
 
 namespace ns3 {
-  // const uint32_t MIN_FRAGMENTATION_THRESHOLD = 256;
-  // const uint32_t MAX_FRAGMENTATION_THRESHOLD = 2048;
+  const uint32_t MIN_FRAGMENTATION_THRESHOLD = 256;
+  const uint32_t MAX_FRAGMENTATION_THRESHOLD = 2048;
 
   struct CarafWifiRemoteStation : public WifiRemoteStation {
     bool rtsCtsOn;
     bool init;
     uint32_t fragmentationThreshold;
-
-    uint32_t m_fragThreshold;
 
     uint32_t m_rate;
 
@@ -92,22 +85,30 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION (this << st);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *)st;
+    NS_LOG_UNCOND("Enter DoReportDataFailed");
 
     if ( station->returnTrial ) {
       station->returnTrialLimit *= 2;
       station->rtsCount = 0;
       SetRtsCtsThreshold(0); // rts/cts 다시 사용
-    } else {
-      if ( station->fragmentationThreshold > MIN_FRAGMENTATION_THRESHOLD ) {
-        station->fragmentationThreshold /= 2;
-      }
+    } else { // fragmentation에서 fail인 경우
+      station->fragmentationThreshold = station->fragmentationThreshold / 2;
+
       if ( station->fragmentationThreshold < MIN_FRAGMENTATION_THRESHOLD ) {
+        station->fragmentationThreshold = MIN_FRAGMENTATION_THRESHOLD;
+      }
+
+      if ( station->fragmentationThreshold == MIN_FRAGMENTATION_THRESHOLD ) {
         station->rtsCtsOn = true;
-        SetRtsCtsThreshold(0);
+        NS_LOG_UNCOND(this << " rtsCtsThreshold" << MIN_FRAGMENTATION_THRESHOLD);
+        SetRtsCtsThreshold(MIN_FRAGMENTATION_THRESHOLD);
       } else {
+      NS_LOG_UNCOND(this << " fragmentationThreshold : " << station->fragmentationThreshold);
         SetFragmentationThreshold(station->fragmentationThreshold);
-      }      
+      }
     }
+
+    NS_LOG_UNCOND("Leave DoReportDataFailed");
   }
 
   void
@@ -130,10 +131,11 @@ namespace ns3 {
     NS_LOG_FUNCTION (this << st << ackSnr << ackMode << dataSnr);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *)st;
     NS_LOG_DEBUG ("station=" << station << " inc rate");
-
+    NS_LOG_UNCOND("Enter DoReportDataOk");
     if ( !station->init ) {
       // station->m_rate = station->m_state->m_operationalRateSet.size() - 1;
-      station->init = !station->init;
+      station->m_rate = GetNSupported(station) - 1;
+      station->init = true;
     }
 
     if ( station->rtsCtsOn ) {
@@ -150,10 +152,22 @@ namespace ns3 {
       station->returnTrial = false;
       station->rtsCtsOn = false;
     } else {
-      if ( station->fragmentationThreshold < MAX_FRAGMENTATION_THRESHOLD ) {
-        station->fragmentationThreshold *= 2;
-        SetFragmentationThreshold(station->fragmentationThreshold);
+      station->fragmentationThreshold *= 2;
+      if ( station->fragmentationThreshold > MAX_FRAGMENTATION_THRESHOLD ) {
+        station->fragmentationThreshold = MAX_FRAGMENTATION_THRESHOLD;
       }
+      NS_LOG_UNCOND(this << " DoReportDataOk -> fragThreshold : " << station->fragmentationThreshold);
+      SetFragmentationThreshold(station->fragmentationThreshold);
+    }
+    NS_LOG_UNCOND("Leave DoReportDataOk");
+  }
+
+  void CarafWifiManager::DoReportDataOk (WifiRemoteStation *st,
+                                         double ackSnr, WifiMode ackMode, double dataSnr)
+  {
+    for ( int i = 0; i < 50; i++ ) {
+      NS_LOG_UNCOND(i << " DoReportDataOk");
+      SetFragmentationThreshold(MAX_FRAGMENTATION_THRESHOLD);
     }
   }
 
@@ -175,6 +189,9 @@ namespace ns3 {
     NS_LOG_FUNCTION (this << st << size);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
    
+    NS_LOG_UNCOND("Enter DoGetDataTxVector");
+    NS_LOG_UNCOND(this << " Supported : " << GetSupported(station, station->m_rate));
+
     return WifiTxVector (GetSupported (station, station->m_rate),
                          GetDefaultTxPowerLevel (),
                          GetLongRetryCount (station),
@@ -189,6 +206,7 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION (this << st);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
+    NS_LOG_UNCOND(this << " DoGetRtsTxVector");
     return WifiTxVector (GetSupported (station, 0),
                          GetDefaultTxPowerLevel (),
                          GetLongRetryCount (station),
