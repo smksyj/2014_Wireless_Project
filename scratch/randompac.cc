@@ -98,6 +98,7 @@ RandomGenerator::DoGenerate (void)
 {
 	m_next = Simulator::Schedule (Seconds (m_delay.GetValue ()), 
 					&RandomGenerator::DoGenerate, this);
+
 	Ptr<Packet> p = Create<Packet> ((m_size.GetInteger ()));
 	m_socket->Send (p);
 }
@@ -155,7 +156,8 @@ int main (int argc, char *argv[])
 
 		YansWifiChannelHelper wifiChannel ;
 		wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
-		wifiChannel.AddPropagationLoss ("ns3::LogDistancePropagationLossModel");
+		wifiChannel.AddPropagationLoss ("ns3::LogDistancePropagationLossModel","ReferenceLoss", DoubleValue(0.0));
+		//wifiChannel.AddPropagationLoss ("ns3::LogDistancePropagationLossModel");
 		wifiPhy.SetChannel (wifiChannel.Create ());
 
 		SeedManager::SetRun(seed);
@@ -182,11 +184,12 @@ int main (int argc, char *argv[])
 
 
 		NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
-		//wifi.SetRemoteStationManager (rateControl);
+		wifi.SetRemoteStationManager (rateControl);
 
-		wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+		/*wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
 						"DataMode",StringValue ("DsssRate11Mbps"),
 						"ControlMode",StringValue("DsssRate1Mbps"));
+		*/			
 
 		Ssid ssid = Ssid ("wifi-default");
 
@@ -310,7 +313,8 @@ int main (int argc, char *argv[])
 		 */
 		ofstream fout;
 		ostringstream out_filename;
-		out_filename << "simulationResult/nsta"<<nSta<<"_rts"<<rtsThre<<".txt";
+		out_filename << "simulationResult_rts/nsta"<<nSta<<"_rts"<<rtsThre<<"_seed"<<seed<<".txt";
+		//out_filename << "simulationResult_frag/nsta"<<nSta<<"_frag"<<fragThre<<"_seed"<<seed<<".txt";
 		fout.open(out_filename.str().c_str(), ostream::out);
 		if(!fout.good()){
 				NS_LOG_UNCOND("File open failed");
