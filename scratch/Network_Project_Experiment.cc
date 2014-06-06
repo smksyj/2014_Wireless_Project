@@ -117,8 +117,8 @@ RxCnt (Ptr<const Packet> p, const Address &a)
 
 int main(int argc, char *argv[]) {
   int16_t pktSize = 1000;
-  int nWifi = 1;
-  uint16_t rtsCtsThreshold = 0;
+  int nWifi = 2;
+  uint16_t rtsCtsThreshold = 2000;
 
   CommandLine cmd;
   cmd.AddValue("nWifi", "Number of Wifi STA Devices", nWifi);
@@ -179,8 +179,8 @@ int main(int argc, char *argv[]) {
   ApplicationContainer udpapp = udpsink.Install (wifiApNode.Get (0));
   udpapp.Start (Seconds (0.0));
   udpapp.Stop (Seconds (7.0));
-  Ptr<Socket> udpsocket[5];
-  Ptr<MyApp> udpflow[5] = CreateObject<MyApp> ();
+  Ptr<Socket> udpsocket[100];
+  Ptr<MyApp> udpflow[100] = CreateObject<MyApp> ();
   // Ptr<Socket> udpsocket[nWifi];
   // Ptr<MyApp> udpflow[nWifi] = CreateObject<MyApp>();
 
