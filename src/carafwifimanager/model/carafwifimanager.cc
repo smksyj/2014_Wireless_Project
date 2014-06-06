@@ -7,6 +7,8 @@
 
 #define Min(a,b) ((a < b) ? a : b)
 #define Max(a,b) ((a > b) ? a : b)
+#define FRAG_MAX 256
+#define FRAG_MIN 2000
 
 NS_LOG_COMPONENT_DEFINE("ns3::CarafWifiManager");
 
@@ -21,6 +23,8 @@ namespace ns3 {
 
     uint32_t m_timerTimeout;
     uint32_t m_successThreshold;
+
+    uint32_t m_fragThreshold;
 
     uint32_t m_rate;
   };
@@ -68,6 +72,7 @@ namespace ns3 {
     station->m_recovery = false;
     station->m_retry = 0;
     station->m_timer = 0;
+    station->m_fragThreshold = FRAG_MIN;
 
     return station;
   }
@@ -96,6 +101,11 @@ namespace ns3 {
     station->m_retry++;
     station->m_success = 0;
 
+    // fragThreshold increase
+    station->m_fragThreshold -= 2;
+    // NS_LOG_UNCOND(this << " : Decreased " << station->m_fragThreshold);
+    SetFragmentationThreshold (station->m_fragThreshold);
+
     if (station->m_recovery)
       {
         NS_ASSERT (station->m_retry >= 1);
@@ -104,7 +114,7 @@ namespace ns3 {
             // need recovery fallback
             if (station->m_rate != 0)
               {
-                station->m_rate--;
+               // station->m_rate--;
               }
           }
         station->m_timer = 0;
@@ -117,7 +127,7 @@ namespace ns3 {
             // need normal fallback
             if (station->m_rate != 0)
               {
-                station->m_rate--;
+               // station->m_rate--;
               }
           }
         if (station->m_retry >= 2)
@@ -148,13 +158,20 @@ namespace ns3 {
     station->m_failed = 0;
     station->m_recovery = false;
     station->m_retry = 0;
+
+    // fragThreshold decrease
+    station->m_fragThreshold += 2;
+    // NS_LOG_UNCOND(this << " : Increased " << station->m_fragThreshold);
+    SetFragmentationThreshold (station->m_fragThreshold);
+
     NS_LOG_DEBUG ("station=" << station << " data ok success=" << station->m_success << ", timer=" << station->m_timer);
     if ((station->m_success == m_successThreshold
          || station->m_timer == m_timerThreshold)
         && (station->m_rate < (station->m_state->m_operationalRateSet.size () - 1)))
       {
         NS_LOG_DEBUG ("station=" << station << " inc rate");
-        station->m_rate++;
+        // station->m_rate++;
+        NS_LOG_UNCOND (station->m_rate++);
         station->m_timer = 0;
         station->m_success = 0;
         station->m_recovery = true;
