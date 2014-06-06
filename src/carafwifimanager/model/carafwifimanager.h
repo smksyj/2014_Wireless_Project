@@ -29,6 +29,7 @@ namespace ns3 {
     // virtual WifiMode DoGetRtsMode (WifiRemoteStation *station);
     virtual WifiTxVector DoGetDataTxVector(WifiRemoteStation *station, uint32_t size);
     virtual WifiTxVector DoGetRtsTxVector(WifiRemoteStation *station);
+    // virtual bool DoNeedRts(WifiRemoteStation *st, Ptr<const Packet> packet, bool normally);
     virtual bool IsLowLatency (void) const;
 
     uint32_t m_timerThreshold;
