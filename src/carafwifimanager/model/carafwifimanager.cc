@@ -7,10 +7,11 @@
 
 #define Min(a,b) ((a < b) ? a : b)
 #define Max(a,b) ((a > b) ? a : b)
+#define FRAG_MAX 256
+#define FRAG_MIN 2000
 
 #define MIN_FRAGMENTATION_THRESHOLD 256
 #define MAX_FRAGMENTATION_THRESHOLD 2048
-
 
 NS_LOG_COMPONENT_DEFINE("ns3::CarafWifiManager");
 
@@ -22,6 +23,8 @@ namespace ns3 {
     bool rtsCtsOn;
     bool init;
     uint32_t fragmentationThreshold;
+
+    uint32_t m_fragThreshold;
 
     uint32_t m_rate;
 

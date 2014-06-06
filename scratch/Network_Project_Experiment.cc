@@ -9,6 +9,8 @@
 
 #include "ns3/carafwifimanager.h"
 
+#define NUMBER_OF_NODES 1
+
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("Network_Project");
@@ -136,6 +138,7 @@ int main(int argc, char *argv[]) {
   phy.SetChannel(channel.Create());
 
   WifiHelper wifi = WifiHelper::Default();
+  wifi.SetStandard (WIFI_PHY_STANDARD_80211b);
   wifi.SetRemoteStationManager("ns3::CarafWifiManager", "RtsCtsThreshold", UintegerValue(rtsCtsThreshold));
 
   NqosWifiMacHelper mac = NqosWifiMacHelper::Default();
@@ -179,8 +182,8 @@ int main(int argc, char *argv[]) {
   ApplicationContainer udpapp = udpsink.Install (wifiApNode.Get (0));
   udpapp.Start (Seconds (0.0));
   udpapp.Stop (Seconds (7.0));
-  Ptr<Socket> udpsocket[100];
-  Ptr<MyApp> udpflow[100] = CreateObject<MyApp> ();
+  Ptr<Socket> udpsocket[NUMBER_OF_NODES];
+  Ptr<MyApp> udpflow[NUMBER_OF_NODES] = CreateObject<MyApp> ();
   // Ptr<Socket> udpsocket[nWifi];
   // Ptr<MyApp> udpflow[nWifi] = CreateObject<MyApp>();
 
