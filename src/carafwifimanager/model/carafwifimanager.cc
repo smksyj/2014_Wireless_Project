@@ -8,21 +8,26 @@
 #define Min(a,b) ((a < b) ? a : b)
 #define Max(a,b) ((a > b) ? a : b)
 
+#define MIN_FRAGMENTATION_THRESHOLD 256
+#define MAX_FRAGMENTATION_THRESHOLD 2048
+
+
 NS_LOG_COMPONENT_DEFINE("ns3::CarafWifiManager");
 
 namespace ns3 {
-  struct ArfWifiRemoteStation : public WifiRemoteStation
-  {
-    uint32_t m_timer;
-    uint32_t m_success;
-    uint32_t m_failed;
-    bool m_recovery;
-    uint32_t m_retry;
+  // const uint32_t MIN_FRAGMENTATION_THRESHOLD = 256;
+  // const uint32_t MAX_FRAGMENTATION_THRESHOLD = 2048;
 
-    uint32_t m_timerTimeout;
-    uint32_t m_successThreshold;
+  struct CarafWifiRemoteStation : public WifiRemoteStation {
+    bool rtsCtsOn;
+    bool init;
+    uint32_t fragmentationThreshold;
 
     uint32_t m_rate;
+
+    bool returnTrial;
+    uint32_t returnTrialLimit;
+    uint32_t rtsCount;
   };
 
   NS_OBJECT_ENSURE_REGISTERED (CarafWifiManager);
@@ -54,20 +59,21 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION (this);
   }
+
   WifiRemoteStation *
   CarafWifiManager::DoCreateStation (void) const
   {
     NS_LOG_FUNCTION (this);
-    ArfWifiRemoteStation *station = new ArfWifiRemoteStation ();
+    CarafWifiRemoteStation *station = new CarafWifiRemoteStation();
 
-    station->m_successThreshold = m_successThreshold;
-    station->m_timerTimeout = m_timerThreshold;
     station->m_rate = 0;
-    station->m_success = 0;
-    station->m_failed = 0;
-    station->m_recovery = false;
-    station->m_retry = 0;
-    station->m_timer = 0;
+    station->fragmentationThreshold = MAX_FRAGMENTATION_THRESHOLD;
+    station->init = false;
+    station->rtsCtsOn = false;
+
+    station->returnTrial = false;
+    station->returnTrialLimit = 1;
+    station->rtsCount = 0;
 
     return station;
   }
@@ -77,121 +83,95 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION (this << station);
   }
-  /**
-   * It is important to realize that "recovery" mode starts after failure of
-   * the first transmission after a rate increase and ends at the first successful
-   * transmission. Specifically, recovery mode transcends retransmissions boundaries.
-   * Fundamentally, ARF handles each data transmission independently, whether it
-   * is the initial transmission of a packet or the retransmission of a packet.
-   * The fundamental reason for this is that there is a backoff between each data
-   * transmission, be it an initial transmission or a retransmission.
-   */
+
   void
   CarafWifiManager::DoReportDataFailed (WifiRemoteStation *st)
   {
     NS_LOG_FUNCTION (this << st);
-    ArfWifiRemoteStation *station = (ArfWifiRemoteStation *)st;
-    station->m_timer++;
-    station->m_failed++;
-    station->m_retry++;
-    station->m_success = 0;
+    CarafWifiRemoteStation *station = (CarafWifiRemoteStation *)st;
 
-    if (station->m_recovery)
-      {
-        NS_ASSERT (station->m_retry >= 1);
-        if (station->m_retry == 1)
-          {
-            // need recovery fallback
-            if (station->m_rate != 0)
-              {
-                station->m_rate--;
-              }
-          }
-        station->m_timer = 0;
+    if ( station->returnTrial ) {
+      station->returnTrialLimit *= 2;
+      station->rtsCount = 0;
+      SetRtsCtsThreshold(0); // rts/cts 다시 사용
+    } else {
+      if ( station->fragmentationThreshold > MIN_FRAGMENTATION_THRESHOLD ) {
+        station->fragmentationThreshold /= 2;
       }
-    else
-      {
-        NS_ASSERT (station->m_retry >= 1);
-        if (((station->m_retry - 1) % 2) == 1)
-          {
-            // need normal fallback
-            if (station->m_rate != 0)
-              {
-                station->m_rate--;
-              }
-          }
-        if (station->m_retry >= 2)
-          {
-            station->m_timer = 0;
-          }
-      }
+      if ( station->fragmentationThreshold < MIN_FRAGMENTATION_THRESHOLD ) {
+        station->rtsCtsOn = true;
+        SetRtsCtsThreshold(0);
+      } else {
+        SetFragmentationThreshold(station->fragmentationThreshold);
+      }      
+    }
   }
+
   void
   CarafWifiManager::DoReportRxOk (WifiRemoteStation *station,
-                                      double rxSnr, WifiMode txMode)
+                                  double rxSnr, WifiMode txMode)
   {
     NS_LOG_FUNCTION (this << station << rxSnr << txMode);
   }
+
   void CarafWifiManager::DoReportRtsOk (WifiRemoteStation *station,
-                                            double ctsSnr, WifiMode ctsMode, double rtsSnr)
+                                        double ctsSnr, WifiMode ctsMode, double rtsSnr)
   {
     NS_LOG_FUNCTION (this << station << ctsSnr << ctsMode << rtsSnr);
     NS_LOG_DEBUG ("station=" << station << " rts ok");
   }
+
   void CarafWifiManager::DoReportDataOk (WifiRemoteStation *st,
-                                             double ackSnr, WifiMode ackMode, double dataSnr)
+                                         double ackSnr, WifiMode ackMode, double dataSnr)
   {
     NS_LOG_FUNCTION (this << st << ackSnr << ackMode << dataSnr);
-    ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
-    station->m_timer++;
-    station->m_success++;
-    station->m_failed = 0;
-    station->m_recovery = false;
-    station->m_retry = 0;
-    NS_LOG_DEBUG ("station=" << station << " data ok success=" << station->m_success << ", timer=" << station->m_timer);
-    if ((station->m_success == m_successThreshold
-         || station->m_timer == m_timerThreshold)
-        && (station->m_rate < (station->m_state->m_operationalRateSet.size () - 1)))
-      {
-        NS_LOG_DEBUG ("station=" << station << " inc rate");
-        station->m_rate++;
-        station->m_timer = 0;
-        station->m_success = 0;
-        station->m_recovery = true;
+    CarafWifiRemoteStation *station = (CarafWifiRemoteStation *)st;
+    NS_LOG_DEBUG ("station=" << station << " inc rate");
+
+    if ( !station->init ) {
+      // station->m_rate = station->m_state->m_operationalRateSet.size() - 1;
+      station->init = !station->init;
+    }
+
+    if ( station->rtsCtsOn ) {
+      station->rtsCount++;
+      if ( station->rtsCount > station->returnTrialLimit ) {
+        station->fragmentationThreshold = MIN_FRAGMENTATION_THRESHOLD;
+        SetFragmentationThreshold(station->fragmentationThreshold);
+        SetRtsCtsThreshold(MAX_FRAGMENTATION_THRESHOLD);
+        station->returnTrial = true;
       }
+    } else if ( station->returnTrial ) {
+      station->rtsCount = 0;
+      station->returnTrialLimit = 1;
+      station->returnTrial = false;
+      station->rtsCtsOn = false;
+    } else {
+      if ( station->fragmentationThreshold < MAX_FRAGMENTATION_THRESHOLD ) {
+        station->fragmentationThreshold *= 2;
+        SetFragmentationThreshold(station->fragmentationThreshold);
+      }
+    }
   }
+
   void
   CarafWifiManager::DoReportFinalRtsFailed (WifiRemoteStation *station)
   {
     NS_LOG_FUNCTION (this << station);
   }
+
   void
   CarafWifiManager::DoReportFinalDataFailed (WifiRemoteStation *station)
   {
     NS_LOG_FUNCTION (this << station);
   }
 
-  // WifiMode
-  // CarafWifiManager::DoGetDataMode (WifiRemoteStation *st, uint32_t size)
-  // {
-  //   NS_LOG_FUNCTION (this << st << size);
-  //   ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
-  //   return GetSupported (station, station->m_rate);
-  // }
-  // WifiMode
-  // CarafWifiManager::DoGetRtsMode (WifiRemoteStation *st)
-  // {
-  //   NS_LOG_FUNCTION (this << st);
-  //   // XXX: we could/should implement the Arf algorithm for
-  //   // RTS only by picking a single rate within the BasicRateSet.
-  //   ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
-  //   return GetSupported (station, 0);
-  // }
   WifiTxVector
   CarafWifiManager::DoGetDataTxVector (WifiRemoteStation *st, uint32_t size)
   {
     NS_LOG_FUNCTION (this << st << size);
-    ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
+    CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
+   
     return WifiTxVector (GetSupported (station, station->m_rate),
                          GetDefaultTxPowerLevel (),
                          GetLongRetryCount (station),
@@ -200,13 +180,12 @@ namespace ns3 {
                          GetNumberOfTransmitAntennas (station),
                          GetStbc (station));
   }
+
   WifiTxVector
   CarafWifiManager::DoGetRtsTxVector (WifiRemoteStation *st)
   {
     NS_LOG_FUNCTION (this << st);
-    /// \todo we could/should implement the Arf algorithm for
-    /// RTS only by picking a single rate within the BasicRateSet.
-    ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
+    CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
     return WifiTxVector (GetSupported (station, 0),
                          GetDefaultTxPowerLevel (),
                          GetLongRetryCount (station),
@@ -223,4 +202,3 @@ namespace ns3 {
     return true;
   }
 }
-
