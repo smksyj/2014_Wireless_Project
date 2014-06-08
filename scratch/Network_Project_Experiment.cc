@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
 
   for ( int j = 0; j < nWifi ; j++ ) {
     udpsocket[j] = Socket::CreateSocket (wifiStaNodes.Get (j), UdpSocketFactory::GetTypeId ());
-    NS_LOG_UNCOND("wifiStaNodes " << j << " : " << wifiStaNodes.Get(j));
+    //NS_LOG_UNCOND("wifiStaNodes " << j << " : " << wifiStaNodes.Get(j));
     udpflow[j] ->Setup (udpsocket[j], Address (InetSocketAddress (wifiApInterface.GetAddress (0), port)), pktSize, 500000, DataRate ("50Mbps"));
     wifiStaNodes.Get (j)->AddApplication (udpflow[j]);    
     udpflow[j]->SetStartTime (Seconds (1.0));

@@ -31,6 +31,8 @@ namespace ns3 {
     virtual WifiTxVector DoGetRtsTxVector(WifiRemoteStation *station);
     // virtual bool DoNeedRts(WifiRemoteStation *st, Ptr<const Packet> packet, bool normally);
     virtual bool IsLowLatency (void) const;
+    virtual bool IsLastFragment(Mac48Address address, const WifiMacHeader *header,
+                       Ptr<const Packet> packet, uint32_t fragmentNumber);
 
     uint32_t m_timerThreshold;
     uint32_t m_successThreshold;
