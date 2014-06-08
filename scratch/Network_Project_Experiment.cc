@@ -9,6 +9,8 @@
 
 #include "ns3/carafwifimanager.h"
 
+#define NUMBER_OF_NODES 4
+
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("Network_Project");
@@ -115,17 +117,15 @@ RxCnt (Ptr<const Packet> p, const Address &a)
   //NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << data);
 }
 
-#define WIFI_NUMBER 3
-
 int main(int argc, char *argv[]) {
-  int16_t pktSize = 1000;
-  // int nWifi = 5;
-  int nWifi = WIFI_NUMBER;
-  uint16_t rtsCtsThreshold = 2000;
+  uint16_t pktSize = 1000;
+  int nWifi = NUMBER_OF_NODES;
+  uint16_t rtsCtsThreshold = 8000;
+
+  uint16_t fragmentationThreshold = 300;
 
   CommandLine cmd;
   cmd.AddValue("nWifi", "Number of Wifi STA Devices", nWifi);
-  cmd.AddValue("rtsThre", "RTS/CTS threshold", rtsCtsThreshold);
   cmd.Parse(argc, argv);
 
   NodeContainer wifiStaNodes;
@@ -140,6 +140,10 @@ int main(int argc, char *argv[]) {
 
   WifiHelper wifi = WifiHelper::Default();
   wifi.SetRemoteStationManager("ns3::CarafWifiManager", "RtsCtsThreshold", UintegerValue(rtsCtsThreshold));
+
+  wifi.SetRemoteStationManager("ns3::CarafWifiManager", "FragmentationThreshold", UintegerValue(fragmentationThreshold));
+
+  wifi.SetRemoteStationManager("ns3::CarafWifiManager", "FragmentationThreshold_old", UintegerValue(fragmentationThreshold));
 
   NqosWifiMacHelper mac = NqosWifiMacHelper::Default();
 
@@ -182,12 +186,12 @@ int main(int argc, char *argv[]) {
   ApplicationContainer udpapp = udpsink.Install (wifiApNode.Get (0));
   udpapp.Start (Seconds (0.0));
   udpapp.Stop (Seconds (7.0));
-  Ptr<Socket> udpsocket[5];
-  Ptr<MyApp> udpflow[5] = CreateObject<MyApp> ();
+  Ptr<Socket> udpsocket[NUMBER_OF_NODES];
+  Ptr<MyApp> udpflow[NUMBER_OF_NODES] = CreateObject<MyApp> ();
 
   for ( int j = 0; j < nWifi ; j++ ) {
     udpsocket[j] = Socket::CreateSocket (wifiStaNodes.Get (j), UdpSocketFactory::GetTypeId ());
-    //NS_LOG_UNCOND("wifiStaNodes " << j << " : " << wifiStaNodes.Get(j));
+    //git NS_LOG_UNCOND("wifiStaNodes " << j << " : " << wifiStaNodes.Get(j));
     udpflow[j] ->Setup (udpsocket[j], Address (InetSocketAddress (wifiApInterface.GetAddress (0), port)), pktSize, 500000, DataRate ("50Mbps"));
     wifiStaNodes.Get (j)->AddApplication (udpflow[j]);    
     udpflow[j]->SetStartTime (Seconds (1.0));
@@ -204,7 +208,4 @@ int main(int argc, char *argv[]) {
   Simulator::Destroy ();
 		
   NS_LOG_UNCOND("Number of STAs= " << nWifi << ", PacketSize= "<< pktSize << ", RtsCtsThreshold= "<< rtsCtsThreshold << "   =>  Throughput= "<< (double)data*8/1000/1000/5 <<"Mbps");
-
-  Simulator::Run();
-  Simulator::Destroy();
 };

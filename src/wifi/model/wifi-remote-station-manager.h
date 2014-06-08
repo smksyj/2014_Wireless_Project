@@ -85,6 +85,7 @@ private:
 class WifiRemoteStationManager : public Object
 {
 public:
+  uint32_t m_fragmentationThreshold_old;
   static TypeId GetTypeId (void);
 
   WifiRemoteStationManager ();
@@ -122,6 +123,7 @@ public:
    * \return the fragmentation threshold
    */
   uint32_t GetFragmentationThreshold (void) const;
+  uint32_t GetFragmentationThreshold_old (void) const;
   /**
    * Sets the maximum STA short retry count (SSRC).
    *
@@ -147,6 +149,7 @@ public:
    * \param threshold the fragmentation threshold
    */
   void SetFragmentationThreshold (uint32_t threshold);
+  void SetFragmentationThreshold_old (uint32_t threshold);
   /**
    * Records HT capabilities of the remote station.
    *
@@ -515,7 +518,7 @@ public:
    * \param fragmentNumber the fragment index of the next fragment to send (starts at zero).
    * \return true if this is the last fragment, false otherwise.
    */
-  virtual bool IsLastFragment (Mac48Address address, const WifiMacHeader *header,
+  bool IsLastFragment (Mac48Address address, const WifiMacHeader *header,
                        Ptr<const Packet> packet, uint32_t fragmentNumber);
 
   /**
@@ -558,8 +561,7 @@ public:
   * \return the number of transmit antennas supported by the phy layer
   */
  uint32_t GetNumberOfTransmitAntennas (void);
-
- WifiRemoteStation* PublicLookup (Mac48Address address, const WifiMacHeader *header) const;
+ WifiRemoteStation* Lookup (Mac48Address address, const WifiMacHeader *header) const;
 
  protected:
   virtual void DoDispose (void);
@@ -851,7 +853,7 @@ private:
    * \param header MAC header
    * \return WifiRemoteStation corresponding to the address
    */
-  WifiRemoteStation* Lookup (Mac48Address address, const WifiMacHeader *header) const;
+  
   WifiMode GetControlAnswerMode (Mac48Address address, WifiMode reqMode);
 
   /**
@@ -861,12 +863,14 @@ private:
    * \param threshold the fragmentation threshold
    */
   void DoSetFragmentationThreshold (uint32_t threshold);
+ void DoSetFragmentationThreshold_old (uint32_t threshold);
   /**
    * Return the current fragmentation threshold
    * 
    * \return the fragmentation threshold
    */
   uint32_t DoGetFragmentationThreshold (void) const;
+  uint32_t DoGetFragmentationThreshold_old (void) const;
   /**
    * Return the number of fragments needed for the given packet.
    *
