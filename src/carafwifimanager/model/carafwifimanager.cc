@@ -36,7 +36,7 @@ namespace ns3 {
     static TypeId tid = TypeId ("ns3::CarafWifiManager")
       .SetParent<WifiRemoteStationManager> ()
       .AddConstructor<CarafWifiManager> ()
-      .AddAttribute ("TimerThreshold", "The 'timer' threshold in the ARF algorithm.",
+      .AddAttribute ("TimerThreshold", "The 'timer' threshold in the CARAF algorithm.",
                      UintegerValue (15),
                      MakeUintegerAccessor (&CarafWifiManager::m_timerThreshold),
                      MakeUintegerChecker<uint32_t> ())
@@ -87,7 +87,7 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION (this << st);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *)st;
-    NS_LOG_UNCOND("Enter DoReportDataFailed");
+    //NS_LOG_UNCOND("Enter DoReportDataFailed");
 
     if ( station->returnTrial ) {
       station->returnTrialLimit *= 2;
@@ -100,17 +100,17 @@ namespace ns3 {
         station->fragmentationThreshold = MIN_FRAGMENTATION_THRESHOLD;
       }
 
-      if ( station->fragmentationThreshold == MIN_FRAGMENTATION_THRESHOLD ) {
+     if ( station->fragmentationThreshold == MIN_FRAGMENTATION_THRESHOLD ) {
         station->rtsCtsOn = true;
-        NS_LOG_UNCOND(this << " rtsCtsThreshold" << MIN_FRAGMENTATION_THRESHOLD);
+        //NS_LOG_UNCOND(this << " rtsCtsThreshold" << MIN_FRAGMENTATION_THRESHOLD);
         SetRtsCtsThreshold(MIN_FRAGMENTATION_THRESHOLD);
       } else {
-      NS_LOG_UNCOND(this << " fragmentationThreshold : " << station->fragmentationThreshold);
-        SetFragmentationThreshold(station->fragmentationThreshold);
+        //NS_LOG_UNCOND(this << " fragmentationThreshold : " << station->fragmentationThreshold);
+        //SetFragmentationThreshold(station->fragmentationThreshold);
       }
     }
 
-    NS_LOG_UNCOND("Leave DoReportDataFailed");
+    //NS_LOG_UNCOND("Leave DoReportDataFailed");
   }
 
   void
@@ -133,7 +133,7 @@ namespace ns3 {
     NS_LOG_FUNCTION (this << st << ackSnr << ackMode << dataSnr);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *)st;
     NS_LOG_DEBUG ("station=" << station << " inc rate");
-    NS_LOG_UNCOND("Enter DoReportDataOk");
+    //NS_LOG_UNCOND("Enter DoReportDataOk");
     if ( !station->init ) {
       // station->m_rate = station->m_state->m_operationalRateSet.size() - 1;
       station->m_rate = GetNSupported(station) - 1;
@@ -158,10 +158,10 @@ namespace ns3 {
       if ( station->fragmentationThreshold > MAX_FRAGMENTATION_THRESHOLD ) {
         station->fragmentationThreshold = MAX_FRAGMENTATION_THRESHOLD;
       }
-      NS_LOG_UNCOND(this << " DoReportDataOk -> fragThreshold : " << station->fragmentationThreshold);
+      //NS_LOG_UNCOND(this << " DoReportDataOk -> fragThreshold : " << station->fragmentationThreshold);
       SetFragmentationThreshold(station->fragmentationThreshold);
     }
-    NS_LOG_UNCOND("Leave DoReportDataOk");
+    //NS_LOG_UNCOND("Leave DoReportDataOk");
   }
 
   void
@@ -182,8 +182,8 @@ namespace ns3 {
     NS_LOG_FUNCTION (this << st << size);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
    
-    NS_LOG_UNCOND("Enter DoGetDataTxVector");
-    //NS_LOG_UNCOND(this << " Supported : " << GetSupported(station, station->m_rate));
+    //NS_LOG_UNCOND("Enter DoGetDataTxVector");
+   // NS_LOG_UNCOND(this << " Supported : " << GetSupported(station, station->m_rate));
 
     return WifiTxVector (GetSupported (station, station->m_rate),
                          GetDefaultTxPowerLevel (),
@@ -199,7 +199,7 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION (this << st);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
-    NS_LOG_UNCOND(this << " DoGetRtsTxVector");
+    //NS_LOG_UNCOND(this << " DoGetRtsTxVector");
     return WifiTxVector (GetSupported (station, 0),
                          GetDefaultTxPowerLevel (),
                          GetLongRetryCount (station),
@@ -211,8 +211,21 @@ namespace ns3 {
 
   bool
   CarafWifiManager::IsLowLatency (void) const
-  {
+  { 
     NS_LOG_FUNCTION (this);
     return true;
+  }
+
+  bool 
+  CarafWifiManager::IsLastFragment (Mac48Address address, const WifiMacHeader *header,
+                       Ptr<const Packet> packet, uint32_t fragmentNumber)
+  {
+    NS_LOG_UNCOND("What the Fuck");
+
+    WifiRemoteStation *station = WifiRemoteStationManager::PublicLookup(address, header);
+
+    NS_LOG_UNCOND(station);
+
+    return WifiRemoteStationManager::IsLastFragment(address, header, packet, fragmentNumber);
   }
 }
