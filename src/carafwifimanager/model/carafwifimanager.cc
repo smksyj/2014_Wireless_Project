@@ -58,14 +58,21 @@ namespace ns3 {
     NS_LOG_FUNCTION (this);
     CarafWifiRemoteStation *station = new CarafWifiRemoteStation();
 
+    station->m_successThreshold = m_successThreshold;
     station->m_rate = 0;
-    station->fragmentationThreshold = MAX_FRAGMENTATION_THRESHOLD;
-    station->init = false;
-    station->rtsCtsOn = false;
+    station->m_failed = 0;
+    station->m_retry = 0;
 
-    station->returnTrial = false;
-    station->returnTrialLimit = 1;
-    station->rtsCount = 0;
+    station->m_fragThreshold = FRAG_MAX;
+    station->m_rtsThreshold = RTS_OFF;
+
+    for (int i=0; i<10; i++)
+     station->m_succeedArray[i] = true;
+    station->m_inputIndex = 0;
+    station->m_succeedCount = 10;
+    station->sampleCount = 0;
+
+    station->m_delayedSet = false;
 
     return station;
   }
@@ -155,7 +162,7 @@ namespace ns3 {
   {
   
     //NS_LOG_UNCOND (this << " : DATAOK");
-    ArfWifiRemoteStation *station = (ArfWifiRemoteStation *) st;
+    CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
     station->m_failed = 0;
     station->m_retry = 0;
 
@@ -276,13 +283,6 @@ namespace ns3 {
     return WifiRemoteStationManager::IsLastFragment(address, header, packet, fragmentNumber);
   }
 
-    bool
-  CarafWifiManager::IsLowLatency (void) const
-  {
-    NS_LOG_FUNCTION (this);
-    return true;
-  }
-
   uint32_t getSucceedCount(bool array[]) {
     uint32_t temp = 0;
 
@@ -292,5 +292,4 @@ namespace ns3 {
 
     return temp;
   }
-}
 }

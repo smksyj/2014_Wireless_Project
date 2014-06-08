@@ -389,7 +389,7 @@ NS_LOG_UNCOND(m_fragmentNumber);
   hdr->SetFragmentNumber (m_fragmentNumber);
   uint32_t startOffset = GetFragmentOffset ();
   Ptr<Packet> fragment;
-  ArfWifiRemoteStation* arf = (ArfWifiRemoteStation*)(m_stationManager->Lookup(m_currentHdr.GetAddr1(), &m_currentHdr));
+  CarafWifiRemoteStation* arf = (CarafWifiRemoteStation*)(m_stationManager->Lookup(m_currentHdr.GetAddr1(), &m_currentHdr));
   uint32_t* delayFlag = &(arf->m_inputIndex);
   if (IsLastFragment ())
     {
