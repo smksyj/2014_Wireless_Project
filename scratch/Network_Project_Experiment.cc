@@ -128,6 +128,7 @@ int main(int argc, char *argv[]) {
   cmd.AddValue("rtsThre", "RTS/CTS threshold", rtsCtsThreshold);
   cmd.Parse(argc, argv);
 
+  //LogComponentEnable("ns3::CarafWifiManager",LOG_LEVEL_FUNCTION);
   NodeContainer wifiStaNodes;
   wifiStaNodes.Create(nWifi);
 
@@ -188,7 +189,7 @@ int main(int argc, char *argv[]) {
   for ( int j = 0; j < nWifi ; j++ ) {
     udpsocket[j] = Socket::CreateSocket (wifiStaNodes.Get (j), UdpSocketFactory::GetTypeId ());
     NS_LOG_UNCOND("wifiStaNodes " << j << " : " << wifiStaNodes.Get(j));
-    udpflow[j] ->Setup (udpsocket[j], Address (InetSocketAddress (wifiApInterface.GetAddress (0), port)), pktSize, 500000, DataRate ("50Mbps"));
+    udpflow[j] ->Setup (udpsocket[j], Address (InetSocketAddress (wifiApInterface.GetAddress (0), port)), pktSize, 5000, DataRate ("50Mbps"));
     wifiStaNodes.Get (j)->AddApplication (udpflow[j]);    
     udpflow[j]->SetStartTime (Seconds (1.0));
     udpflow[j]->SetStopTime (Seconds (6.0));

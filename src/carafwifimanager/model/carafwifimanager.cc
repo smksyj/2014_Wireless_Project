@@ -5,6 +5,8 @@
 #include "ns3/log.h"
 #include "ns3/uinteger.h"
 
+#include "ns3/core-module.h"
+
 #define Min(a,b) ((a < b) ? a : b)
 #define Max(a,b) ((a > b) ? a : b)
 
@@ -162,15 +164,6 @@ namespace ns3 {
     NS_LOG_UNCOND("Leave DoReportDataOk");
   }
 
-  void CarafWifiManager::DoReportDataOk (WifiRemoteStation *st,
-                                         double ackSnr, WifiMode ackMode, double dataSnr)
-  {
-    for ( int i = 0; i < 50; i++ ) {
-      NS_LOG_UNCOND(i << " DoReportDataOk");
-      SetFragmentationThreshold(MAX_FRAGMENTATION_THRESHOLD);
-    }
-  }
-
   void
   CarafWifiManager::DoReportFinalRtsFailed (WifiRemoteStation *station)
   {
@@ -190,7 +183,7 @@ namespace ns3 {
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
    
     NS_LOG_UNCOND("Enter DoGetDataTxVector");
-    NS_LOG_UNCOND(this << " Supported : " << GetSupported(station, station->m_rate));
+    //NS_LOG_UNCOND(this << " Supported : " << GetSupported(station, station->m_rate));
 
     return WifiTxVector (GetSupported (station, station->m_rate),
                          GetDefaultTxPowerLevel (),

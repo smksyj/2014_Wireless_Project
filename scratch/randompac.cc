@@ -124,12 +124,14 @@ int main (int argc, char *argv[])
 		int seed = 1;
 		int rtsThre = 2000;
 		int fragThre = 2000;
+		int rtsOrFrag = 0; // 0-rts simultation, 1-fragmentation simulation
 		CommandLine cmd;
 		cmd.AddValue("nSTA", "number of stations", nSta);
 		cmd.AddValue("RA", "rate adaptation algorithm index", ra_indx);
 		cmd.AddValue("Seed", "seed", seed);
 		cmd.AddValue("RtsThre", "RTS/CTS threshold", rtsThre);
 		cmd.AddValue("FragThre", "Fragmentation threshold", fragThre);
+		cmd.AddValue("simulFlag", "rts or frag", rtsOrFrag);
 		cmd.Parse (argc, argv);
 
 		Config::SetDefault ("ns3::WifiRemoteStationManager::FragmentationThreshold", UintegerValue(fragThre));
@@ -164,25 +166,6 @@ int main (int argc, char *argv[])
 		
 		std::string rateControl("ns3::ArfWifiManager");
 		
-		switch(ra_indx){
-				case 0:
-						rateControl = "ns3::ArfWifiManager";
-						break;
-				case 1:
-						rateControl = "ns3::AarfWifiManager";
-						break;
-				case 2:
-						rateControl = "ns3::CaraWifiManager";
-						break;
-				case 3:
-						rateControl = "ns3::IdealWifiManager";
-						break;
-				default:
-						NS_LOG_UNCOND("index fail");
-		}
-		//
-
-
 		NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
 		wifi.SetRemoteStationManager (rateControl);
 
@@ -313,8 +296,12 @@ int main (int argc, char *argv[])
 		 */
 		ofstream fout;
 		ostringstream out_filename;
-		out_filename << "simulationResult_rts/nsta"<<nSta<<"_rts"<<rtsThre<<"_seed"<<seed<<".txt";
-		//out_filename << "simulationResult_frag/nsta"<<nSta<<"_frag"<<fragThre<<"_seed"<<seed<<".txt";
+		if(rtsOrFrag == 0) {
+			out_filename << "simulationResult_rts/nsta"<<nSta<<"_rts"<<rtsThre<<"_seed"<<seed<<".txt";
+		}
+		else {
+			out_filename << "simulationResult_frag/nsta"<<nSta<<"_frag"<<fragThre<<"_seed"<<seed<<".txt";
+		}
 		fout.open(out_filename.str().c_str(), ostream::out);
 		if(!fout.good()){
 				NS_LOG_UNCOND("File open failed");
