@@ -164,7 +164,8 @@ int main (int argc, char *argv[])
 
 		SeedManager::SetRun(seed);
 		
-		std::string rateControl("ns3::ArfWifiManager");
+		//std::string rateControl("ns3::ArfWifiManager");
+		std::string rateControl("ns3::CaraWifiManager");
 		
 		NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
 		wifi.SetRemoteStationManager (rateControl);
