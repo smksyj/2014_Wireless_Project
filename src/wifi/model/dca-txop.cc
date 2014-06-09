@@ -35,6 +35,8 @@
 #include "wifi-mac.h"
 #include "random-stream.h"
 
+#include "ns3/carafwifimanager.h"
+
 NS_LOG_COMPONENT_DEFINE ("DcaTxop");
 
 #undef NS_LOG_APPEND_CONTEXT
