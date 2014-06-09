@@ -5,6 +5,33 @@
 #include "ns3/wifi-remote-station-manager.h"
 
 namespace ns3 {
+  struct CarafWifiRemoteStation : public WifiRemoteStation
+  {
+    uint32_t m_failed;
+    uint32_t m_retry;
+
+    uint32_t m_successThreshold;
+
+    uint32_t m_fragThreshold;
+    uint32_t m_rtsThreshold;
+
+    uint32_t m_rate;
+
+    bool m_succeedArray[10];
+    uint32_t m_inputIndex;
+    uint32_t m_succeedCount;
+
+    uint32_t sampleCount;
+
+    uint32_t m_delayedSet;
+  };
+
+  uint32_t getSucceedCount(bool array[]);
+
+  void logIsSucceed(bool array[], uint32_t* inputIndex, bool isSucceed);
+
+  void controlThreshold(bool array[], uint32_t* frag, uint32_t* rts);
+
   class CarafWifiManager : public WifiRemoteStationManager
   {
   public:
