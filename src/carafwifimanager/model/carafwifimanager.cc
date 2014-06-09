@@ -9,12 +9,6 @@
 
 #define Min(a,b) ((a < b) ? a : b)
 #define Max(a,b) ((a > b) ? a : b)
-#define FRAG_MIN 500
-#define FRAG_MAX 1000
-#define RTS_ON 0
-#define RTS_OFF 8000
-#define FREQ_SAMPLE 10
-#define CONTROL_RATE 9
 
 #define DELAY_FRAG_INC 1
 #define DELAY_FRAG_DEC 2
@@ -32,15 +26,6 @@ namespace ns3 {
     static TypeId tid = TypeId ("ns3::CarafWifiManager")
       .SetParent<WifiRemoteStationManager> ()
       .AddConstructor<CarafWifiManager> ()
-      /*.AddAttribute ("TimerThreshold", "The 'timer' threshold in the CARAF algorithm.",
-                     UintegerValue (15),
-                     MakeUintegerAccessor (&CarafWifiManager::m_timerThreshold),
-                     MakeUintegerChecker<uint32_t> ())
-      .AddAttribute ("SuccessThreshold",
-                     "The minimum number of sucessfull transmissions to try a new rate.",
-                     UintegerValue (10),
-                     MakeUintegerAccessor (&CarafWifiManager::m_successThreshold),
-                     MakeUintegerChecker<uint32_t> ())*/
       ;
     return tid;
   }
@@ -68,10 +53,11 @@ namespace ns3 {
     station->m_fragThreshold = FRAG_MAX;
     station->m_rtsThreshold = RTS_OFF;
 
-    for (int i=0; i<10; i++)
+    for (int i=0; i<FREQ_SAMPLE; i++)
      station->m_succeedArray[i] = true;
+  
     station->m_inputIndex = 0;
-    station->m_succeedCount = 10;
+    station->m_succeedCount = FREQ_SAMPLE;
     station->sampleCount = 0;
 
     station->m_delayedSet = false;
@@ -103,13 +89,13 @@ namespace ns3 {
       station->m_succeedArray[station->m_inputIndex++] = false;
 
       // Set inputIndex to 0 if it's 10
-      if (station->m_inputIndex == 10) {
+      if (station->m_inputIndex == FREQ_SAMPLE) {
        station->m_inputIndex = 0;
       }
 
       // Count succeesrate
       int tempCount = 0;
-      for (int i=0; i<10; i++) {
+      for (int i=0; i<FREQ_SAMPLE; i++) {
        if (station->m_succeedArray[i])
         tempCount++;
       }
@@ -139,7 +125,7 @@ namespace ns3 {
 
       // Reset m_succeedArray
       if (station->m_delayedSet != 0) {
-       for (int i=0; i<10; i++)
+       for (int i=0; i<FREQ_SAMPLE; i++)
         station->m_succeedArray[i] = true;
       }
     }
@@ -149,21 +135,19 @@ namespace ns3 {
   CarafWifiManager::DoReportRxOk (WifiRemoteStation *station,
                                   double rxSnr, WifiMode txMode)
   {
-    NS_LOG_FUNCTION (this << station << rxSnr << txMode);
+    
   }
 
   void CarafWifiManager::DoReportRtsOk (WifiRemoteStation *station,
                                         double ctsSnr, WifiMode ctsMode, double rtsSnr)
   {
+    NS_LOG_UNCOND (this << " : RTSOK");
     NS_LOG_FUNCTION (this << station << ctsSnr << ctsMode << rtsSnr);
-    NS_LOG_DEBUG ("station=" << station << " rts ok");
   }
 
   void CarafWifiManager::DoReportDataOk (WifiRemoteStation *st,
                                          double ackSnr, WifiMode ackMode, double dataSnr)
   {
-  
-    //NS_LOG_UNCOND (this << " : DATAOK");
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
     station->m_failed = 0;
     station->m_retry = 0;
@@ -172,19 +156,18 @@ namespace ns3 {
     (station->sampleCount)++;
     if (station->sampleCount == FREQ_SAMPLE) { // Enough samples collected
       station->sampleCount = 0;
-      NS_LOG_UNCOND (this << " : OK");
-
+     
       // Log result
       station->m_succeedArray[station->m_inputIndex++] = true;
 
       // Set inputIndex to 0 if it's 10
-      if (station->m_inputIndex == 10) {
+      if (station->m_inputIndex == FREQ_SAMPLE) {
        station->m_inputIndex = 0;
       }
 
       // Count succeesrate
       int tempCount = 0;
-      for (int i=0; i<10; i++) {
+       for (int i=0; i<FREQ_SAMPLE; i++) {
        if (station->m_succeedArray[i])
         tempCount++;
       }
@@ -210,11 +193,9 @@ namespace ns3 {
        exit(0);
       }
 
-      //NS_LOG_UNCOND(station->m_delayedSet);
-
       // Reset m_succeedArray
       if (station->m_delayedSet != 0) {
-       for (int i=0; i<10; i++)
+       for (int i=0; i<FREQ_SAMPLE; i++)
         station->m_succeedArray[i] = true;
       }
     }
@@ -237,9 +218,6 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION (this << st << size);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
-   
-    //NS_LOG_UNCOND("Enter DoGetDataTxVector");
-   // NS_LOG_UNCOND(this << " Supported : " << GetSupported(station, station->m_rate));
 
     return WifiTxVector (GetSupported (station, station->m_rate),
                          GetDefaultTxPowerLevel (),
@@ -255,7 +233,6 @@ namespace ns3 {
   {
     NS_LOG_FUNCTION (this << st);
     CarafWifiRemoteStation *station = (CarafWifiRemoteStation *) st;
-    //NS_LOG_UNCOND(this << " DoGetRtsTxVector");
     return WifiTxVector (GetSupported (station, 0),
                          GetDefaultTxPowerLevel (),
                          GetLongRetryCount (station),
@@ -276,19 +253,13 @@ namespace ns3 {
   CarafWifiManager::IsLastFragment (Mac48Address address, const WifiMacHeader *header,
                        Ptr<const Packet> packet, uint32_t fragmentNumber)
   {
-    NS_LOG_UNCOND("FragmmentNumber: " << fragmentNumber);
-
-    //WifiRemoteStation *station = WifiRemoteStationManager::PublicLookup(address, header);
-
-   // NS_LOG_UNCOND(station);
-
-    return WifiRemoteStationManager::IsLastFragment(address, header, packet, fragmentNumber);
+      return WifiRemoteStationManager::IsLastFragment(address, header, packet, fragmentNumber);
   }
 
   uint32_t getSucceedCount(bool array[]) {
     uint32_t temp = 0;
 
-    for (int i=0; i<10; i++)
+    for (int i=0; i<FREQ_SAMPLE; i++)
      if (array[i])
       temp++;
 

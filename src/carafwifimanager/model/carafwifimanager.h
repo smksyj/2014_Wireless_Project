@@ -2,9 +2,17 @@
 #ifndef CARAFWIFIMANAGER_H
 #define CARAFWIFIMANAGER_H
 
+#define FRAG_MIN 256
+#define FRAG_MAX 2048
+#define RTS_ON 0
+#define RTS_OFF 8000
+#define FREQ_SAMPLE 1
+#define CONTROL_RATE 1
+
 #include "ns3/wifi-remote-station-manager.h"
 
 namespace ns3 {
+
   struct CarafWifiRemoteStation : public WifiRemoteStation
   {
     uint32_t m_failed;
@@ -17,7 +25,7 @@ namespace ns3 {
 
     uint32_t m_rate;
 
-    bool m_succeedArray[10];
+    bool m_succeedArray[FREQ_SAMPLE];
     uint32_t m_inputIndex;
     uint32_t m_succeedCount;
 
@@ -52,11 +60,8 @@ namespace ns3 {
                                  double ackSnr, WifiMode ackMode, double dataSnr);
     virtual void DoReportFinalRtsFailed (WifiRemoteStation *station);
     virtual void DoReportFinalDataFailed (WifiRemoteStation *station);
-    // virtual WifiMode DoGetDataMode (WifiRemoteStation *station, uint32_t size);
-    // virtual WifiMode DoGetRtsMode (WifiRemoteStation *station);
     virtual WifiTxVector DoGetDataTxVector(WifiRemoteStation *station, uint32_t size);
     virtual WifiTxVector DoGetRtsTxVector(WifiRemoteStation *station);
-    // virtual bool DoNeedRts(WifiRemoteStation *st, Ptr<const Packet> packet, bool normally);
     virtual bool IsLowLatency (void) const;
     virtual bool IsLastFragment(Mac48Address address, const WifiMacHeader *header,
                        Ptr<const Packet> packet, uint32_t fragmentNumber);
@@ -67,4 +72,3 @@ namespace ns3 {
 }
 
 #endif /* CARAFWIFIMANAGER_H */
-

@@ -385,10 +385,42 @@ DcaTxop::GetFragmentPacket (WifiMacHeader *hdr)
   hdr->SetFragmentNumber (m_fragmentNumber);
   uint32_t startOffset = GetFragmentOffset ();
   Ptr<Packet> fragment;
+  CarafWifiRemoteStation* arf = (CarafWifiRemoteStation*)(m_stationManager->Lookup(m_currentHdr.GetAddr1(), &m_currentHdr));
+  uint32_t* delayFlag = &(arf->m_delayedSet);
   if (IsLastFragment ())
     {
       hdr->SetNoMoreFragments ();
-    }
+      
+  fragment = m_currentPacket->CreateFragment (startOffset,
+                                              GetFragmentSize ());
+            switch (*delayFlag) {
+             case 1:
+              m_stationManager->SetFragmentationThreshold (m_stationManager->GetFragmentationThreshold() + 50);
+              *delayFlag = 0;
+              NS_LOG_UNCOND("FRAG INCREASED (" << m_stationManager << ") : " << m_stationManager->GetFragmentationThreshold());
+              break;
+
+             case 2:
+              m_stationManager->SetFragmentationThreshold (m_stationManager->GetFragmentationThreshold() - 50);
+              *delayFlag = 0;
+              NS_LOG_UNCOND("FRAG DECREASED (" << m_stationManager << ") : " << m_stationManager->GetFragmentationThreshold());
+              break;
+
+             case 3:
+              m_stationManager->SetFragmentationThreshold (1000);
+              m_stationManager->SetRtsCtsThreshold (0);
+              *delayFlag = 0;
+              NS_LOG_UNCOND("RTS TURNED ON : ");
+              break;      
+
+             case 4:
+              m_stationManager->SetRtsCtsThreshold (8000);
+              m_stationManager->SetFragmentationThreshold (500);
+              *delayFlag = 0;
+              NS_LOG_UNCOND("RTS TURNED OFF : ");
+              break;
+            }
+  }
   else
     {
       hdr->SetMoreFragments ();
@@ -615,6 +647,10 @@ DcaTxop::StartNext (void)
       params.EnableNextData (GetNextFragmentSize ());
     }
   Low ()->StartTransmission (fragment, &hdr, params, m_transmissionListener);
+
+  if (m_stationManager->m_fragmentationThreshold_old != m_stationManager->GetFragmentationThreshold()) {
+        m_stationManager->m_isReadyToSet = true;
+  }
 }
 
 void

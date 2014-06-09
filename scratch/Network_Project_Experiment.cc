@@ -9,7 +9,7 @@
 
 #include "ns3/carafwifimanager.h"
 
-#define NUMBER_OF_NODES 4
+#define NUMBER_OF_NODES 5
 
 using namespace ns3;
 
@@ -123,6 +123,7 @@ int main(int argc, char *argv[]) {
   uint16_t rtsCtsThreshold = 8000;
 
   uint16_t fragmentationThreshold = 300;
+//  uint16_t fragmentationThreshold_old = 300;
 
   CommandLine cmd;
   cmd.AddValue("nWifi", "Number of Wifi STA Devices", nWifi);
@@ -140,11 +141,12 @@ int main(int argc, char *argv[]) {
   phy.SetChannel(channel.Create());
 
   WifiHelper wifi = WifiHelper::Default();
+  // wifi.SetStandard (WIFI_PHY_STANDARD_80211b);
   wifi.SetRemoteStationManager("ns3::CarafWifiManager", "RtsCtsThreshold", UintegerValue(rtsCtsThreshold));
-
+  
   wifi.SetRemoteStationManager("ns3::CarafWifiManager", "FragmentationThreshold", UintegerValue(fragmentationThreshold));
+  //wifi.SetRemoteStationManager("ns3::CarafWifiManager", "FragmentationThreshold_old", UintegerValue(fragmentationThreshold_old));
 
-  wifi.SetRemoteStationManager("ns3::CarafWifiManager", "FragmentationThreshold_old", UintegerValue(fragmentationThreshold));
 
   NqosWifiMacHelper mac = NqosWifiMacHelper::Default();
 
@@ -189,11 +191,12 @@ int main(int argc, char *argv[]) {
   udpapp.Stop (Seconds (7.0));
   Ptr<Socket> udpsocket[NUMBER_OF_NODES];
   Ptr<MyApp> udpflow[NUMBER_OF_NODES] = CreateObject<MyApp> ();
+  // Ptr<Socket> udpsocket[nWifi];
+  // Ptr<MyApp> udpflow[nWifi] = CreateObject<MyApp>();
 
   for ( int j = 0; j < nWifi ; j++ ) {
     udpsocket[j] = Socket::CreateSocket (wifiStaNodes.Get (j), UdpSocketFactory::GetTypeId ());
-    //git NS_LOG_UNCOND("wifiStaNodes " << j << " : " << wifiStaNodes.Get(j));
-    udpflow[j] ->Setup (udpsocket[j], Address (InetSocketAddress (wifiApInterface.GetAddress (0), port)), pktSize, 500000, DataRate ("50Mbps"));
+    udpflow[j] ->Setup (udpsocket[j], Address (InetSocketAddress (wifiApInterface.GetAddress (0), port)), pktSize, 50000, DataRate ("50Mbps"));
     wifiStaNodes.Get (j)->AddApplication (udpflow[j]);    
     udpflow[j]->SetStartTime (Seconds (1.0));
     udpflow[j]->SetStopTime (Seconds (6.0));
@@ -209,4 +212,7 @@ int main(int argc, char *argv[]) {
   Simulator::Destroy ();
 		
   NS_LOG_UNCOND("Number of STAs= " << nWifi << ", PacketSize= "<< pktSize << ", RtsCtsThreshold= "<< rtsCtsThreshold << "   =>  Throughput= "<< (double)data*8/1000/1000/5 <<"Mbps");
+
+  Simulator::Run();
+  Simulator::Destroy();
 };
