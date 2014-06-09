@@ -375,7 +375,6 @@ uint32_t
 DcaTxop::GetFragmentOffset (void)
 {
   NS_LOG_FUNCTION (this);
-  //NS_LOG_UNCOND (m_stationManager << " : GetFragOffset with FragNum " << m_fragmentNumber);
   return m_stationManager->GetFragmentOffset (m_currentHdr.GetAddr1 (), &m_currentHdr,
                                               m_currentPacket, m_fragmentNumber);
 }
@@ -385,20 +384,17 @@ DcaTxop::GetFragmentPacket (WifiMacHeader *hdr)
 {
   NS_LOG_FUNCTION (this << hdr);
   *hdr = m_currentHdr;
-NS_LOG_UNCOND(m_fragmentNumber);
   hdr->SetFragmentNumber (m_fragmentNumber);
   uint32_t startOffset = GetFragmentOffset ();
   Ptr<Packet> fragment;
   CarafWifiRemoteStation* arf = (CarafWifiRemoteStation*)(m_stationManager->Lookup(m_currentHdr.GetAddr1(), &m_currentHdr));
-  uint32_t* delayFlag = &(arf->m_inputIndex);
+  uint32_t* delayFlag = &(arf->m_delayedSet);
   if (IsLastFragment ())
     {
-      //NS_LOG_UNCOND(m_stationManager << " : GetFragSize(LAST) : " << GetFragmentSize());
       hdr->SetNoMoreFragments ();
-      //m_stationManager->SetFragmentationThreshold (m_stationManager->GetFragmentationThreshold() + 50);
+      
   fragment = m_currentPacket->CreateFragment (startOffset,
                                               GetFragmentSize ());
-      NS_LOG_UNCOND(*delayFlag);
             switch (*delayFlag) {
              case 1:
               m_stationManager->SetFragmentationThreshold (m_stationManager->GetFragmentationThreshold() + 50);
@@ -660,6 +656,10 @@ DcaTxop::StartNext (void)
       params.EnableNextData (GetNextFragmentSize ());
     }
   Low ()->StartTransmission (fragment, &hdr, params, m_transmissionListener);
+
+  if (m_stationManager->m_fragmentationThreshold_old != m_stationManager->GetFragmentationThreshold()) {
+        m_stationManager->m_isReadyToSet = true;
+  }
 }
 
 void
