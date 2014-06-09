@@ -873,7 +873,7 @@ WifiRemoteStationManager::GetNFragments (const WifiMacHeader *header, Ptr<const 
   SetFragmentationThreshold_old(GetFragmentationThreshold());
   }
 
-      NS_LOG_UNCOND(nFragments << " : nFragments");
+      //NS_LOG_UNCOND(nFragments << " : nFragments");
   return nFragments;
 
 
