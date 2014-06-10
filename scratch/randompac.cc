@@ -23,7 +23,6 @@ static void
 RxCnt (Ptr<const Packet> p, const Address &a)
 {
 		data = data + p->GetSize();
-//		NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\ttotal: " << data << "\tpacket size: " << p->GetSize());
 }
 
 class RandomGenerator : public Application
@@ -120,14 +119,12 @@ int main (int argc, char *argv[])
 {
 
 		int nSta = 1;
-		int ra_indx = 0;
 		int seed = 1;
 		int rtsThre = 2000;
 		int fragThre = 2000;
 		int rtsOrFrag = 0; // 0-rts simultation, 1-fragmentation simulation
 		CommandLine cmd;
 		cmd.AddValue("nSTA", "number of stations", nSta);
-		cmd.AddValue("RA", "rate adaptation algorithm index", ra_indx);
 		cmd.AddValue("Seed", "seed", seed);
 		cmd.AddValue("RtsThre", "RTS/CTS threshold", rtsThre);
 		cmd.AddValue("FragThre", "Fragmentation threshold", fragThre);
@@ -153,13 +150,11 @@ int main (int argc, char *argv[])
 
 
 		YansWifiPhyHelper wifiPhy =  YansWifiPhyHelper::Default ();
-		//wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
 
 
 		YansWifiChannelHelper wifiChannel ;
 		wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
 		wifiChannel.AddPropagationLoss ("ns3::LogDistancePropagationLossModel","ReferenceLoss", DoubleValue(0.0));
-		//wifiChannel.AddPropagationLoss ("ns3::LogDistancePropagationLossModel");
 		wifiPhy.SetChannel (wifiChannel.Create ());
 
 		SeedManager::SetRun(seed);
@@ -170,10 +165,6 @@ int main (int argc, char *argv[])
 		NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
 		wifi.SetRemoteStationManager (rateControl);
 
-		/*wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-						"DataMode",StringValue ("DsssRate11Mbps"),
-						"ControlMode",StringValue("DsssRate1Mbps"));
-		*/			
 
 		Ssid ssid = Ssid ("wifi-default");
 
@@ -236,7 +227,6 @@ int main (int argc, char *argv[])
 
 
 
-		//Ptr<RandomGenerator> randomApp = CreateObject<RandomGenerator>();
 		Address apAddress(InetSocketAddress(addresses.GetAddress(0), port));
 		Ptr<Socket> socket[50];
 		Ptr<RandomGenerator> randomApp[50] = CreateObject<RandomGenerator>();;
@@ -248,8 +238,6 @@ int main (int argc, char *argv[])
 				randomApp[i]->SetStartTime(Seconds(1.0));
 				randomApp[i]->SetStopTime(Seconds(10.0));
 		}
-		//	wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
-		//	wifiPhy.EnablePcap ("session6_ex1", devices);
 
 
 		AnimationInterface anim("randomPacket.xml");
@@ -280,21 +268,6 @@ int main (int argc, char *argv[])
 
 
 		Simulator::Destroy ();
-		//
-
-		/*
-		   ofstream fout;
-		   ostringstream out_filename;
-		   out_filename << "RaResult/thr_ra"<<ra_indx<<"_nsta"<<nSta<<"_seed"<<seed<<".txt";
-		   fout.open(out_filename.str().c_str(), ostream::out);
-		   if(!fout.good()){
-		   NS_LOG_UNCOND("File open failed");
-		   }
-
-		   fout << (double)data*8/1000/1000/9;
-		   fout.close();
-		//
-		 */
 		ofstream fout;
 		ostringstream out_filename;
 		if(rtsOrFrag == 0) {
